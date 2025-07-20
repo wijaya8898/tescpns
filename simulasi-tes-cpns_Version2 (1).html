@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Tes CPNS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better aesthetics and font */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to start to allow scrolling */
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            max-width: 900px; /* Max width for larger screens */
+            width: 100%;
+            padding: 2rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .question-card {
+            background-color: #f9fafb; /* Lighter background for question */
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05); /* Inner shadow */
+        }
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #e2e8f0; /* Light border */
+        }
+        .option-label:hover {
+            background-color: #eff6ff; /* Light blue on hover */
+            border-color: #93c5fd; /* Blue border on hover */
+        }
+        .option-label input[type="radio"] {
+            margin-right: 0.75rem;
+            accent-color: #3b82f6; /* Blue accent for radio button */
+        }
+        .option-label.selected {
+            background-color: #dbeafe; /* Lighter blue when selected */
+            border-color: #3b82f6; /* Blue border when selected */
+            font-weight: 500;
+        }
+        .button-primary {
+            background-color: #3b82f6; /* Blue */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button-primary:hover {
+            background-color: #2563eb; /* Darker blue on hover */
+            transform: translateY(-1px);
+        }
+        .button-primary:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+        .button-secondary {
+            background-color: #e2e8f0; /* Light gray */
+            color: #4b5563; /* Darker gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .button-secondary:hover {
+            background-color: #cbd5e1; /* Darker gray on hover */
+            transform: translateY(-1px);
+        }
+        .button-secondary:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .correct-answer {
+            color: #10b981; /* Green for correct */
+            font-weight: 600;
+        }
+        .wrong-answer {
+            color: #ef4444; /* Red for wrong */
+            font-weight: 600;
+        }
+
+        /* Question Navigation Grid Styles */
+        .question-navigation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border-radius: 0.75rem;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .question-nav-button {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #cbd5e1;
+            background-color: #ef4444; /* Default: Unanswered (Red) */
+            color: white; /* White text for red background */
+        }
+        .question-nav-button.answered {
+            background-color: #10b981; /* Answered (Green) */
+            border-color: #059669;
+            color: white; /* White text for green background */
+        }
+        .question-nav-button.current {
+            background-color: #3b82f6; /* Current question (Blue) */
+            border-color: #3b82f6;
+            color: white;
+            box-shadow: 0 2px 5px rgba(59, 130, 246, 0.4);
+            transform: scale(1.05);
+        }
+        .question-nav-button:hover:not(.current) {
+            filter: brightness(1.1); /* Slightly brighter on hover */
+            transform: translateY(-1px);
+        }
+        .question-nav-button:active:not(.current) {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+        /* Style for the timer text to make it larger */
+        #timer {
+            font-size: 1.5rem; /* Increased font size */
+            font-weight: bold;
+            color: #3b82f6; /* Blue color for emphasis */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="container">
+        <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6">
+            <span class="bg-yellow-300 text-blue-700 font-bold p-2 rounded-lg inline-block mx-auto">Simulasi Tes CPNS</span>
+        </h1>
+
+        <!-- Header: Logo, Batas Waktu, Jumlah Soal, Dijawab, Belum Dijawab -->
+        <div class="bg-blue-50 p-6 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+            <div class="flex items-center space-x-4">
+                <!-- Circular Logo -->
+                <img src="https://placehold.co/80x80/1a2b4c/ffffff?text=CAT" alt="Logo CAT" class="rounded-full w-20 h-20 object-cover">
+            </div>
+            <div class="text-center md:text-right text-gray-700 text-sm font-medium">
+                <p><strong>Batas Waktu:</strong> <span id="timer">00:00</span></p>
+                <p><strong>Jumlah Soal:</strong> <span id="total-questions-display">100</span></p>
+                <p><strong>Dijawab:</strong> <span id="answered-count-display">0</span></p>
+                <p><strong>Belum Dijawab:</strong> <span id="unanswered-count-display">100</span></p>
+            </div>
+            <div class="flex flex-col gap-2 mt-4 md:mt-0">
+                <button id="submit-btn-header" class="button-primary text-sm py-2 px-4">Selesai Ujian</button>
+                <button id="restart-test-btn" class="button-primary text-sm py-2 px-4">Mulai Ulang</button>
+            </div>
+        </div>
+
+        <!-- Question Display Area -->
+        <div id="question-area" class="question-card">
+            <p class="text-gray-600 font-medium mb-2">Soal No.<span id="current-question-number">1</span></p>
+            <p id="question-text" class="text-lg font-semibold text-gray-900 mb-4">Memuat soal...</p>
+            <div id="options-container" class="space-y-3">
+                <!-- Options will be loaded here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between mt-6">
+            <button id="save-next-btn" class="button-primary flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                Simpan dan Lanjutkan
+            </button>
+            <button id="skip-question-btn" class="button-primary flex items-center gap-2">
+                Lewatkan soal ini
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Question Navigation Grid -->
+        <div class="text-center text-gray-600 text-sm mt-4">
+            Hijau: Dijawab, Merah: Belum dijawab
+        </div>
+        <div class="question-navigation-grid" id="question-navigation-grid">
+            <!-- Question navigation buttons will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Confirmation Modal for Restart -->
+    <div id="restart-confirm-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Konfirmasi Mulai Ulang</h3>
+            <p class="text-gray-700 mb-6">Apakah Anda yakin ingin memulai ulang ujian? Semua jawaban akan dihapus dan timer akan direset.</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-restart-btn" class="button-secondary">Batal</button>
+                <button id="confirm-restart-btn" class="button-primary">Ya, Mulai Ulang</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal for Submit -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Konfirmasi Selesai Ujian</h3>
+            <p class="text-gray-700 mb-6">Apakah Anda yakin ingin mengakhiri ujian ini?</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-submit-btn" class="button-secondary">Batal</button>
+                <button id="confirm-submit-btn" class="button-primary">Ya, Selesai</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="results-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Hasil Ujian Anda</h3>
+            <div class="space-y-3 text-left mb-6">
+                <div class="result-item">
+                    <span class="text-gray-700 font-medium">Total Soal:</span>
+                    <span id="total-questions-result" class="text-gray-900"></span>
+                </div>
+                <div class="result-item">
+                    <span class="text-gray-700 font-medium">Jawaban Benar:</span>
+                    <span id="correct-answers-result" class="correct-answer"></span>
+                </div>
+                <div class="result-item">
+                    <span class="text-gray-700 font-medium">Jawaban Salah:</span>
+                    <span id="wrong-answers-result" class="wrong-answer"></span>
+                </div>
+                <div class="result-item">
+                    <span class="text-gray-700 font-medium">Soal Tidak Dijawab:</span>
+                    <span id="unanswered-questions-result" class="text-gray-900"></span>
+                </div>
+                <div class="result-item">
+                    <span class="text-gray-700 font-medium">Skor Anda:</span>
+                    <span id="score-result" class="text-blue-600 text-xl font-bold"></span>
+                </div>
+            </div>
+            <button id="close-results-btn" class="button-primary">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        // Array of questions. You can extend this to 100 or more.
+        // Each question has:
+        // - question: The question text
+        // - options: An array of answer options
+        // - answer: The correct answer (index of the correct option, 0-indexed)
+        const questions = [
+            // TWK (Tes Wawasan Kebangsaan) - 30 Soal
+            {
+                question: "Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 disahkan pada tanggal?",
+                options: [
+                    "17 Agustus 1945",
+                    "18 Agustus 1945",
+                    "19 Agustus 1945",
+                    "20 Agustus 1945"
+                ],
+                answer: 1
+            },
+            {
+                question: "Siapakah Presiden pertama Republik Indonesia?",
+                options: [
+                    "Mohammad Hatta",
+                    "Soekarno",
+                    "Soeharto",
+                    "B.J. Habibie"
+                ],
+                answer: 1
+            },
+            {
+                question: "Pancasila sebagai dasar negara Indonesia terdiri dari berapa sila?",
+                options: [
+                    "Tiga",
+                    "Empat",
+                    "Lima",
+                    "Enam"
+                ],
+                answer: 2
+            },
+            {
+                question: "Ibu kota negara Indonesia adalah?",
+                options: [
+                    "Bandung",
+                    "Surabaya",
+                    "Jakarta",
+                    "Yogyakarta"
+                ],
+                answer: 2
+            },
+            {
+                question: "Lambang negara Indonesia adalah?",
+                options: [
+                    "Burung Merpati",
+                    "Burung Garuda Pancasila",
+                    "Burung Elang",
+                    "Burung Cendrawasih"
+                ],
+                answer: 1
+            },
+            {
+                question: "Tanggal berapa Hari Kemerdekaan Republik Indonesia diperingati?",
+                options: [
+                    "1 Juni",
+                    "17 Agustus",
+                    "28 Oktober",
+                    "10 November"
+                ],
+                answer: 1
+            },
+            {
+                question: "Berapa jumlah provinsi di Indonesia saat ini (berdasarkan data terbaru yang umum)?",
+                options: [
+                    "34",
+                    "36",
+                    "38",
+                    "39"
+                ],
+                answer: 2
+            },
+            {
+                question: "Sumpah Pemuda diperingati setiap tanggal?",
+                options: [
+                    "20 Mei",
+                    "17 Agustus",
+                    "28 Oktober",
+                    "10 November"
+                ],
+                answer: 2
+            },
+            {
+                question: "Lagu kebangsaan Indonesia Raya diciptakan oleh?",
+                options: [
+                    "Ismail Marzuki",
+                    "Wage Rudolf Supratman",
+                    "H. Mutahar",
+                    "C. Simanjuntak"
+                ],
+                answer: 1
+            },
+            {
+                question: "Sistem pemerintahan Indonesia adalah?",
+                options: [
+                    "Monarki",
+                    "Republik",
+                    "Komunis",
+                    "Teokrasi"
+                ],
+                answer: 1
+            },
+            {
+                question: "Bunyi sila ketiga Pancasila adalah?",
+                options: [
+                    "Ketuhanan Yang Maha Esa",
+                    "Kemanusiaan yang Adil dan Beradab",
+                    "Persatuan Indonesia",
+                    "Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan dalam Permusyawaratan/Perwakilan"
+                ],
+                answer: 2
+            },
+            {
+                question: "Pasal berapa dalam UUD 1945 yang mengatur tentang hak warga negara untuk berserikat dan berkumpul?",
+                options: [
+                    "Pasal 27",
+                    "Pasal 28",
+                    "Pasal 28E ayat (3)",
+                    "Pasal 29"
+                ],
+                answer: 2
+            },
+            {
+                question: "BPUPKI dibentuk pada tanggal?",
+                options: [
+                    "1 Maret 1945",
+                    "29 April 1945",
+                    "1 Juni 1945",
+                    "7 Agustus 1945"
+                ],
+                answer: 0
+            },
+            {
+                question: "Makna semboyan Bhinneka Tunggal Ika adalah?",
+                options: [
+                    "Bersatu kita teguh, bercerai kita runtuh",
+                    "Berbeda-beda tetapi tetap satu jua",
+                    "Satu nusa satu bangsa",
+                    "Musyawarah untuk mufakat"
+                ],
+                answer: 1
+            },
+            {
+                question: "Tujuan negara Indonesia yang tercantum dalam Pembukaan UUD 1945, kecuali?",
+                options: [
+                    "Melindungi segenap bangsa Indonesia",
+                    "Memajukan kesejahteraan umum",
+                    "Mencerdaskan kehidupan bangsa",
+                    "Menciptakan masyarakat yang homogen"
+                ],
+                answer: 3
+            },
+            {
+                question: "Nilai luhur Pancasila yang terkandung dalam sila pertama adalah?",
+                options: [
+                    "Keadilan sosial",
+                    "Persatuan",
+                    "Ketuhanan",
+                    "Demokrasi"
+                ],
+                answer: 2
+            },
+            {
+                question: "Konstitusi yang pernah berlaku di Indonesia setelah UUD 1945 dan sebelum kembali ke UUD 1945 adalah?",
+                options: [
+                    "Konstitusi RIS 1949 dan UUDS 1950",
+                    "UUD Sementara 1949 dan Konstitusi RIS 1950",
+                    "UUD 1945 dan Konstitusi RIS",
+                    "UUDS 1950 dan Konstitusi 1949"
+                ],
+                answer: 0
+            },
+            {
+                question: "Dasar hukum yang mengatur tentang bendera, bahasa, dan lambang negara, serta lagu kebangsaan adalah?",
+                options: [
+                    "UU No. 24 Tahun 2009",
+                    "UU No. 12 Tahun 2011",
+                    "UU No. 23 Tahun 2014",
+                    "UU No. 6 Tahun 2014"
+                ],
+                answer: 0
+            },
+            {
+                question: "Peran serta masyarakat dalam menjaga keutuhan NKRI dapat diwujudkan melalui?",
+                options: [
+                    "Mengikuti demonstrasi anarkis",
+                    "Meningkatkan rasa individualisme",
+                    "Menjaga kerukunan antarumat beragama",
+                    "Menyebarkan berita bohong"
+                ],
+                answer: 2
+            },
+            {
+                question: "Keputusan penting dalam sejarah Indonesia yang dihasilkan pada Sidang PPKI tanggal 18 Agustus 1945 adalah, kecuali?",
+                options: [
+                    "Mengesahkan UUD 1945",
+                    "Memilih Presiden dan Wakil Presiden",
+                    "Membentuk Komite Nasional Indonesia Pusat (KNIP)",
+                    "Membentuk Tentara Nasional Indonesia (TNI)"
+                ],
+                answer: 3
+            },
+            {
+                question: "Hak asasi manusia diatur dalam UUD 1945 pada pasal?",
+                options: [
+                    "Pasal 27",
+                    "Pasal 28A sampai 28J",
+                    "Pasal 29",
+                    "Pasal 30"
+                ],
+                answer: 1
+            },
+            {
+                question: "Sikap yang mencerminkan pengamalan sila keempat Pancasila adalah?",
+                options: [
+                    "Beribadah sesuai agama dan kepercayaan masing-masing",
+                    "Menghargai hasil musyawarah meskipun tidak sesuai dengan pendapat pribadi",
+                    "Gotong royong membersihkan lingkungan",
+                    "Tidak membeda-bedakan suku, agama, ras, dan antargolongan"
+                ],
+                answer: 1
+            },
+            {
+                question: "Pahlawan nasional yang dikenal sebagai Bapak Proklamator adalah?",
+                options: [
+                    "Mohammad Hatta",
+                    "Soekarno",
+                    "Soekarno dan Mohammad Hatta",
+                    "Sudirman"
+                ],
+                answer: 2
+            },
+            {
+                question: "Salah satu ancaman terhadap persatuan dan kesatuan bangsa Indonesia adalah?",
+                options: [
+                    "Perkembangan teknologi informasi",
+                    "Globalisasi",
+                    "Radikalisme dan terorisme",
+                    "Kerja sama internasional"
+                ],
+                answer: 2
+            },
+            {
+                question: "Sistem pertahanan dan keamanan rakyat semesta (Sishankamrata) diatur dalam UUD 1945 pada pasal?",
+                options: [
+                    "Pasal 27 ayat (3)",
+                    "Pasal 28",
+                    "Pasal 30 ayat (1)",
+                    "Pasal 30 ayat (2)"
+                ],
+                answer: 3
+            },
+            {
+                question: "Organisasi yang bertugas untuk merumuskan dasar negara Indonesia merdeka adalah?",
+                options: [
+                    "PPKI",
+                    "KNIP",
+                    "BPUPKI",
+                    "MPR"
+                ],
+                answer: 2
+            },
+            {
+                question: "Salah satu ciri negara kesatuan adalah?",
+                options: [
+                    "Pemerintahan pusat memiliki kekuasaan penuh",
+                    "Adanya negara bagian yang berdaulat",
+                    "Pembagian kekuasaan yang jelas antara pusat dan daerah",
+                    "Sistem federasi"
+                ],
+                answer: 0
+            },
+            {
+                question: "Hak dan kewajiban warga negara dalam bidang pendidikan diatur dalam UUD 1945 pasal?",
+                options: [
+                    "Pasal 28C",
+                    "Pasal 31",
+                    "Pasal 32",
+                    "Pasal 33"
+                ],
+                answer: 1
+            },
+            {
+                question: "Peran MPR dalam sistem ketatanegaraan Indonesia adalah?",
+                options: [
+                    "Membuat undang-undang",
+                    "Mengawasi pelaksanaan undang-undang",
+                    "Mengubah dan menetapkan UUD",
+                    "Melaksanakan pemerintahan"
+                ],
+                answer: 2
+            },
+            {
+                question: "Nasionalisme dalam konteks kebangsaan Indonesia berarti?",
+                options: [
+                    "Cinta tanah air yang berlebihan",
+                    "Mengutamakan kepentingan golongan di atas kepentingan bangsa",
+                    "Rasa cinta, bangga, dan setia kepada bangsa dan negara Indonesia",
+                    "Fanatisme terhadap budaya sendiri"
+                ],
+                answer: 2
+            },
+
+            // TIU (Tes Intelegensia Umum) - 35 Soal
+            {
+                question: "Jika 3x + 7 = 22, maka nilai x adalah?",
+                options: [
+                    "3",
+                    "5",
+                    "7",
+                    "9"
+                ],
+                answer: 1
+            },
+            {
+                question: "25% dari 200 adalah?",
+                options: [
+                    "25",
+                    "50",
+                    "75",
+                    "100"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika sebuah mobil menempuh jarak 180 km dalam 3 jam, berapa kecepatan rata-rata mobil tersebut?",
+                options: [
+                    "50 km/jam",
+                    "60 km/jam",
+                    "70 km/jam",
+                    "80 km/jam"
+                ],
+                answer: 1
+            },
+            {
+                question: "Deret angka: 2, 4, 8, 16, ... Angka selanjutnya adalah?",
+                options: [
+                    "20",
+                    "24",
+                    "32",
+                    "64"
+                ],
+                answer: 2
+            },
+            {
+                question: "SINONIM dari kata 'MORTALITAS' adalah?",
+                options: [
+                    "Angka kelahiran",
+                    "Angka kematian",
+                    "Kesehatan",
+                    "Kehidupan"
+                ],
+                answer: 1
+            },
+            {
+                question: "ANTONIM dari kata 'KONKLUSI' adalah?",
+                options: [
+                    "Kesimpulan",
+                    "Pembukaan",
+                    "Penutup",
+                    "Isi"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika A = B, dan B = C, maka A ... C",
+                options: [
+                    "= B",
+                    "= C",
+                    "≠ C",
+                    "> C"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika harga 5 buah pensil adalah Rp 12.500, berapa harga 3 buah pensil?",
+                options: [
+                    "Rp 6.500",
+                    "Rp 7.000",
+                    "Rp 7.500",
+                    "Rp 8.000"
+                ],
+                answer: 2
+            },
+            {
+                question: "Deret huruf: A, C, E, G, ... Huruf selanjutnya adalah?",
+                options: [
+                    "H",
+                    "I",
+                    "J",
+                    "K"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika 1/4 dari suatu bilangan adalah 20, berapakah 3/5 dari bilangan tersebut?",
+                options: [
+                    "48",
+                    "60",
+                    "72",
+                    "80"
+                ],
+                answer: 1
+            },
+            {
+                question: "Sebuah kotak berisi 12 bola merah dan 8 bola biru. Jika diambil satu bola secara acak, berapa peluang terambil bola merah?",
+                options: [
+                    "1/2",
+                    "3/5",
+                    "2/5",
+                    "1/4"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika P = 5 dan Q = 3, maka $P^2 - Q^2$ adalah?",
+                options: [
+                    "4",
+                    "8",
+                    "16",
+                    "25"
+                ],
+                answer: 2
+            },
+            {
+                question: "SINONIM dari kata 'BAKU' adalah?",
+                options: [
+                    "Asli",
+                    "Standar",
+                    "Palsu",
+                    "Langka"
+                ],
+                answer: 1
+            },
+            {
+                question: "ANTONIM dari kata 'HAYATI' adalah?",
+                options: [
+                    "Hidup",
+                    "Mati",
+                    "Tumbuh",
+                    "Berkembang"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika 40% dari X adalah 80, berapakah X?",
+                options: [
+                    "160",
+                    "200",
+                    "240",
+                    "320"
+                ],
+                answer: 1
+            },
+            {
+                question: "Deret angka: 1, 3, 7, 13, ... Angka selanjutnya adalah?",
+                options: [
+                    "19",
+                    "21",
+                    "23",
+                    "25"
+                ],
+                answer: 2
+            },
+            {
+                question: "Jika hari ini adalah hari Senin, maka 100 hari lagi adalah hari?",
+                options: [
+                    "Selasa",
+                    "Rabu",
+                    "Kamis",
+                    "Jumat"
+                ],
+                answer: 2
+            },
+            {
+                question: "Jika 1 lusin sendok berharga Rp 36.000, berapa harga 4 buah sendok?",
+                options: [
+                    "Rp 9.000",
+                    "Rp 12.000",
+                    "Rp 18.000",
+                    "Rp 24.000"
+                ],
+                answer: 1
+            },
+            {
+                question: "Analog: GURU : SEKOLAH = DOKTER : ...",
+                options: [
+                    "Pasien",
+                    "Obat",
+                    "Rumah Sakit",
+                    "Sakit"
+                ],
+                answer: 2
+            },
+            {
+                question: "Jika 5 orang dapat menyelesaikan pekerjaan dalam 10 hari, berapa hari yang dibutuhkan 2 orang untuk menyelesaikan pekerjaan yang sama?",
+                options: [
+                    "4 hari",
+                    "10 hari",
+                    "20 hari",
+                    "25 hari"
+                ],
+                answer: 2
+            },
+            {
+                question: "SINONIM dari kata 'FRIKSI' adalah?",
+                options: [
+                    "Perpecahan",
+                    "Persatuan",
+                    "Kesepakatan",
+                    "Kerja sama"
+                ],
+                answer: 0
+            },
+            {
+                question: "ANTONIM dari kata 'KAPABEL' adalah?",
+                options: [
+                    "Mampu",
+                    "Bodoh",
+                    "Cerdas",
+                    "Terampil"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika sebuah persegi memiliki keliling 24 cm, berapa luas persegi tersebut?",
+                options: [
+                    "24 cm²",
+                    "36 cm²",
+                    "48 cm²",
+                    "64 cm²"
+                ],
+                answer: 1
+            },
+            {
+                question: "Deret angka: 5, 10, 15, 20, ... Angka selanjutnya adalah?",
+                options: [
+                    "22",
+                    "25",
+                    "28",
+                    "30"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika A lebih besar dari B, dan B lebih besar dari C, maka ...",
+                options: [
+                    "A lebih kecil dari C",
+                    "A sama dengan C",
+                    "A lebih besar dari C",
+                    "Tidak dapat disimpulkan"
+                ],
+                answer: 2
+            },
+            {
+                question: "Berapakah hasil dari $15 \times 4 - 20 \div 5$?",
+                options: [
+                    "4",
+                    "16",
+                    "56",
+                    "64"
+                ],
+                answer: 2
+            },
+            {
+                question: "SINONIM dari kata 'DAUR' adalah?",
+                options: [
+                    "Awal",
+                    "Akhir",
+                    "Siklus",
+                    "Jeda"
+                ],
+                answer: 2
+            },
+            {
+                question: "ANTONIM dari kata 'KOLEKTIF' adalah?",
+                options: [
+                    "Bersama",
+                    "Individu",
+                    "Kelompok",
+                    "Massal"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika harga sebuah buku adalah Rp 45.000 setelah diskon 10%, berapa harga asli buku tersebut sebelum diskon?",
+                options: [
+                    "Rp 40.500",
+                    "Rp 49.500",
+                    "Rp 50.000",
+                    "Rp 55.000"
+                ],
+                answer: 2
+            },
+            {
+                question: "Deret angka: 1, 4, 9, 16, ... Angka selanjutnya adalah?",
+                options: [
+                    "20",
+                    "25",
+                    "30",
+                    "36"
+                ],
+                answer: 1
+            },
+            {
+                question: "Analog: AIR : HAUS = MAKANAN : ...",
+                options: [
+                    "Lapar",
+                    "Kenyang",
+                    "Enak",
+                    "Sehat"
+                ],
+                answer: 0
+            },
+            {
+                question: "Jika 1 hari = 24 jam, dan 1 jam = 60 menit, berapa menit dalam 2 hari?",
+                options: [
+                    "1440 menit",
+                    "2880 menit",
+                    "3600 menit",
+                    "4320 menit"
+                ],
+                answer: 1
+            },
+            {
+                question: "SINONIM dari kata 'NUANSA' adalah?",
+                options: [
+                    "Perbedaan halus",
+                    "Kesamaan",
+                    "Kejelasan",
+                    "Kekacauan"
+                ],
+                answer: 0
+            },
+            {
+                question: "ANTONIM dari kata 'KONTAN' adalah?",
+                options: [
+                    "Tunai",
+                    "Hutang",
+                    "Langsung",
+                    "Cepat"
+                ],
+                answer: 1
+            },
+            {
+                question: "Jika sebuah segitiga memiliki alas 10 cm dan tinggi 8 cm, berapa luas segitiga tersebut?",
+                options: [
+                    "20 cm²",
+                    "40 cm²",
+                    "60 cm²",
+                    "80 cm²"
+                ],
+                answer: 1
+            },
+
+            // TKP (Tes Karakteristik Pribadi) - 35 Soal
+            {
+                question: "Anda adalah seorang staf di bagian pelayanan publik. Suatu hari, seorang warga datang dengan keluhan yang sangat emosional dan mulai berteriak. Sikap Anda adalah?",
+                options: [
+                    "Ikut terbawa emosi dan membalas teriakannya.",
+                    "Mencoba menenangkan diri, mendengarkan keluhannya dengan sabar, dan mencari solusi.",
+                    "Mengabaikannya dan meminta rekan kerja lain yang melayani.",
+                    "Meminta satpam untuk mengusirnya."
+                ],
+                answer: 1
+            },
+            {
+                question: "Anda ditugaskan memimpin sebuah tim untuk proyek penting dengan tenggat waktu ketat. Beberapa anggota tim terlihat kurang termotivasi. Apa yang akan Anda lakukan?",
+                options: [
+                    "Melaporkan anggota tim tersebut kepada atasan.",
+                    "Memberikan teguran keras agar mereka segera bekerja.",
+                    "Mengadakan rapat untuk mendiskusikan masalah dan mencari cara memotivasi tim.",
+                    "Mengerjakan sebagian besar tugas sendiri agar proyek selesai tepat waktu."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda menemukan rekan kerja melakukan kesalahan fatal dalam pekerjaan yang dapat merugikan instansi. Apa tindakan Anda?",
+                options: [
+                    "Langsung melaporkannya kepada atasan tanpa berbicara dengan rekan tersebut.",
+                    "Mencoba memperbaiki kesalahan tersebut diam-diam tanpa sepengetahuan rekan atau atasan.",
+                    "Mendekati rekan tersebut secara pribadi, memberitahu kesalahannya, dan menawarkan bantuan untuk memperbaikinya.",
+                    "Mengabaikannya karena bukan tanggung jawab Anda."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda dihadapkan pada situasi di mana Anda harus bekerja sama dengan rekan yang memiliki pandangan politik yang sangat berbeda dengan Anda. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Menghindari interaksi dengan rekan tersebut sebisa mungkin.",
+                    "Mencoba meyakinkan rekan tersebut untuk mengubah pandangannya.",
+                    "Fokus pada tujuan pekerjaan bersama dan menghindari diskusi tentang politik.",
+                    "Bahas perbedaan pandangan politik untuk mencari titik temu."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda memiliki ide inovatif untuk meningkatkan efisiensi kerja di kantor, namun Anda tahu ide tersebut mungkin akan ditentang oleh beberapa rekan senior. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengurungkan niat untuk menyampaikan ide tersebut.",
+                    "Menyampaikan ide tersebut kepada atasan secara pribadi tanpa melibatkan rekan lain.",
+                    "Mempersiapkan presentasi yang kuat dengan data pendukung dan mencoba meyakinkan semua pihak.",
+                    "Menunggu sampai ada orang lain yang memiliki ide serupa."
+                ],
+                answer: 2
+            },
+            {
+                question: "Ketika Anda merasa stres dan tertekan karena pekerjaan, apa yang biasanya Anda lakukan?",
+                options: [
+                    "Mengeluh kepada rekan kerja atau keluarga.",
+                    "Menyendiri dan menghindari interaksi dengan siapa pun.",
+                    "Mencari cara untuk mengelola stres, seperti berolahraga atau melakukan hobi.",
+                    "Meminta cuti untuk sementara waktu."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat seorang kolega sering terlambat datang ke kantor, padahal Anda tahu dia tidak memiliki alasan yang mendesak. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikannya karena itu bukan urusan Anda.",
+                    "Menegurnya secara langsung di depan umum.",
+                    "Membicarakannya dengan atasan agar atasan yang menindaklanjuti.",
+                    "Mendekati kolega tersebut secara pribadi dan menanyakan apakah ada masalah yang bisa dibantu."
+                ],
+                answer: 3
+            },
+            {
+                question: "Anda diminta untuk mengerjakan tugas di luar deskripsi pekerjaan Anda yang sebenarnya. Sikap Anda adalah?",
+                options: [
+                    "Menolak karena bukan tugas Anda.",
+                    "Menerima dengan terpaksa dan mengerjakannya asal-asalan.",
+                    "Menerima tugas tersebut sebagai kesempatan untuk belajar dan mengembangkan diri.",
+                    "Meminta imbalan tambahan karena tugas tersebut di luar kewajiban."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi kritik atau masukan negatif terhadap pekerjaan Anda?",
+                options: [
+                    "Merasa tersinggung dan mengabaikan kritik tersebut.",
+                    "Membela diri dan mencari alasan atas kesalahan yang dilakukan.",
+                    "Menerima kritik dengan lapang dada, menganalisisnya, dan berusaha memperbaikinya.",
+                    "Menyalahkan orang lain atas kritik yang diberikan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya praktik diskriminasi di lingkungan kerja berdasarkan suku atau agama. Apa yang akan Anda lakukan?",
+                options: [
+                    "Diam saja karena takut terlibat masalah.",
+                    "Ikut-ikutan melakukan diskriminasi.",
+                    "Melaporkan praktik tersebut kepada pihak berwenang di instansi.",
+                    "Mencoba berbicara dengan pelaku diskriminasi secara pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda adalah seorang PNS yang baru saja dipindah tugaskan ke daerah terpencil dengan fasilitas yang minim. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Mengajukan permohonan pindah kembali ke daerah yang lebih nyaman.",
+                    "Mengeluh dan tidak semangat dalam bekerja.",
+                    "Menerima penugasan tersebut sebagai tantangan dan berusaha beradaptasi serta memberikan kontribusi terbaik.",
+                    "Mencari cara untuk mendapatkan fasilitas tambahan dari pemerintah daerah."
+                ],
+                answer: 2
+            },
+            {
+                question: "Dalam sebuah rapat, pendapat Anda tidak disetujui oleh mayoritas anggota. Apa yang akan Anda lakukan?",
+                options: [
+                    "Tetap bersikukuh dengan pendapat Anda.",
+                    "Merasa kecewa dan tidak mau lagi berpartisipasi dalam rapat.",
+                    "Menghargai keputusan mayoritas dan mendukung pelaksanaannya.",
+                    "Mencoba mencari dukungan dari pihak lain di luar rapat."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk menjaga kerahasiaan informasi penting instansi, namun ada teman dekat yang terus mendesak Anda untuk membocorkannya. Sikap Anda adalah?",
+                options: [
+                    "Membocorkan informasi tersebut karena teman dekat Anda.",
+                    "Menolak dengan tegas dan menjelaskan pentingnya menjaga kerahasiaan.",
+                    "Memberikan sebagian kecil informasi untuk memuaskan teman Anda.",
+                    "Menghindari teman tersebut agar tidak ditanyai lagi."
+                ],
+                answer: 1
+            },
+            {
+                question: "Anda menghadapi kendala yang tidak terduga dalam menyelesaikan tugas. Apa yang akan Anda lakukan?",
+                options: [
+                    "Menyerah dan meminta bantuan rekan kerja untuk menyelesaikan seluruh tugas.",
+                    "Mencoba mencari solusi sendiri terlebih dahulu sebelum meminta bantuan.",
+                    "Menunda pekerjaan sampai kendala tersebut hilang dengan sendirinya.",
+                    "Menyalahkan kendala tersebut atas kegagalan Anda."
+                ],
+                answer: 1
+            },
+            {
+                question: "Bagaimana Anda menjaga integritas diri sebagai seorang abdi negara?",
+                options: [
+                    "Melakukan korupsi kecil-kecilan karena banyak yang melakukannya.",
+                    "Memanfaatkan jabatan untuk kepentingan pribadi atau golongan.",
+                    "Menjunjung tinggi nilai-nilai kejujuran, disiplin, dan profesionalisme dalam setiap tindakan.",
+                    "Bersikap acuh tak acuh terhadap aturan yang berlaku."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat ada peluang untuk mengembangkan diri melalui pelatihan atau pendidikan lanjutan, namun hal itu membutuhkan pengorbanan waktu dan biaya. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut karena terlalu banyak pengorbanan.",
+                    "Mengikuti pelatihan/pendidikan jika dibiayai sepenuhnya oleh instansi.",
+                    "Berusaha keras untuk mengikuti pelatihan/pendidikan tersebut demi peningkatan kompetensi diri.",
+                    "Menunggu sampai ada tawaran yang lebih mudah."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda adalah seorang atasan yang memiliki bawahan dengan kinerja kurang memuaskan. Apa yang akan Anda lakukan?",
+                options: [
+                    "Langsung memecat bawahan tersebut.",
+                    "Memberikan teguran keras dan ancaman.",
+                    "Memberikan bimbingan, pelatihan, dan evaluasi secara berkala untuk meningkatkan kinerjanya.",
+                    "Membiarkannya karena tidak ingin menimbulkan konflik."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap perubahan kebijakan atau prosedur baru di instansi?",
+                options: [
+                    "Menolak perubahan karena sudah terbiasa dengan cara lama.",
+                    "Menerima perubahan dengan skeptis dan mencari celah untuk tidak mengikutinya.",
+                    "Mempelajari dan memahami perubahan tersebut, serta berusaha beradaptasi dengan cepat.",
+                    "Mengkritik perubahan tersebut di depan umum."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda dihadapkan pada pilihan antara menyelesaikan tugas penting yang mendesak atau membantu rekan kerja yang sedang kesulitan. Apa yang akan Anda prioritaskan?",
+                options: [
+                    "Menyelesaikan tugas penting Anda terlebih dahulu.",
+                    "Membantu rekan kerja meskipun tugas Anda tertunda.",
+                    "Mencari cara untuk menyelesaikan keduanya secara efektif.",
+                    "Meminta atasan untuk memutuskan mana yang harus diprioritaskan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga etika dan moral dalam berinteraksi di media sosial sebagai seorang PNS?",
+                options: [
+                    "Bebas mengunggah apa saja yang disukai.",
+                    "Menyebarkan informasi pribadi rekan kerja atau instansi.",
+                    "Berhati-hati dalam berkomentar, tidak menyebarkan berita bohong, dan menjaga nama baik instansi.",
+                    "Menggunakan media sosial untuk mengkritik kebijakan pemerintah."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat seorang warga kesulitan mengisi formulir pelayanan karena kurang memahami prosedur. Apa yang akan Anda lakukan?",
+                options: [
+                    "Membiarkannya karena itu tanggung jawab warga.",
+                    "Menyuruhnya membaca petunjuk yang sudah ada.",
+                    "Mendekati dan menawarkan bantuan untuk menjelaskan atau mengisi formulir.",
+                    "Menyuruhnya kembali lain waktu jika sudah paham."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi perbedaan pendapat dalam tim kerja?",
+                options: [
+                    "Memaksakan pendapat Anda agar diterima.",
+                    "Menghindari diskusi agar tidak terjadi konflik.",
+                    "Mendengarkan semua pendapat, mencari titik temu, dan mencapai kesepakatan bersama.",
+                    "Mengeluarkan anggota tim yang tidak sependapat."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja lembur di luar jam kerja karena ada tugas mendesak. Sikap Anda adalah?",
+                options: [
+                    "Menolak karena sudah di luar jam kerja.",
+                    "Menerima dengan syarat ada imbalan lembur yang besar.",
+                    "Menerima dengan sukarela sebagai bentuk komitmen terhadap pekerjaan.",
+                    "Mengajukan izin untuk tidak lembur dengan alasan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda mengelola waktu dan prioritas dalam pekerjaan yang banyak dan beragam?",
+                options: [
+                    "Mengerjakan semua tugas secara acak tanpa perencanaan.",
+                    "Menunda pekerjaan yang sulit dan mengerjakan yang mudah terlebih dahulu.",
+                    "Membuat daftar prioritas, mengatur jadwal, dan fokus pada tugas yang paling penting.",
+                    "Meminta rekan kerja untuk membantu menyelesaikan tugas Anda."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda menerima hadiah dari pihak yang memiliki kepentingan dengan instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Menerima hadiah tersebut karena tidak ada yang tahu.",
+                    "Menolak hadiah tersebut secara sopan untuk menghindari konflik kepentingan.",
+                    "Menerima hadiah dan melaporkannya kepada atasan.",
+                    "Mengambil hadiah dan menyimpannya sendiri."
+                ],
+                answer: 1
+            },
+            {
+                question: "Anda merasa tidak nyaman dengan lingkungan kerja yang baru. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengeluh kepada teman atau keluarga.",
+                    "Mencoba beradaptasi dan mencari cara untuk membuat lingkungan lebih nyaman.",
+                    "Mengajukan permohonan pindah instansi.",
+                    "Menyalahkan lingkungan kerja atas ketidaknyamanan Anda."
+                ],
+                answer: 1
+            },
+            {
+                question: "Bagaimana Anda merespons jika ada rekan kerja yang berprestasi lebih baik dari Anda?",
+                options: [
+                    "Merasa iri dan mencoba menjatuhkannya.",
+                    "Mengabaikannya dan fokus pada diri sendiri.",
+                    "Memberikan apresiasi dan belajar dari keberhasilannya untuk meningkatkan diri.",
+                    "Bersaing secara tidak sehat untuk menjadi yang terbaik."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk memberikan pelatihan kepada rekan kerja yang kurang berpengalaman. Sikap Anda adalah?",
+                options: [
+                    "Menolak karena itu bukan tugas Anda.",
+                    "Melakukan pelatihan dengan terpaksa.",
+                    "Menerima dengan antusias dan berusaha memberikan yang terbaik untuk membantu rekan Anda.",
+                    "Meminta imbalan tambahan untuk pelatihan tersebut."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi kegagalan dalam mencapai suatu tujuan?",
+                options: [
+                    "Menyerah dan tidak mencoba lagi.",
+                    "Menyalahkan orang lain atas kegagalan tersebut.",
+                    "Menganalisis penyebab kegagalan, belajar dari kesalahan, dan mencoba lagi dengan strategi yang berbeda.",
+                    "Merasa putus asa dan tidak percaya diri."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi konflik antarbagian di instansi. Apa yang akan Anda lakukan?",
+                options: [
+                    "Membiarkannya karena bukan urusan Anda.",
+                    "Ikut campur dan memperkeruh suasana.",
+                    "Berusaha menjadi mediator untuk menyelesaikan konflik secara damai.",
+                    "Melaporkan konflik tersebut kepada atasan tanpa mencoba menyelesaikannya."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja dalam tim lintas divisi yang belum pernah Anda kenal sebelumnya. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Merasa canggung dan pasif dalam tim.",
+                    "Hanya berinteraksi dengan anggota tim yang sudah dikenal.",
+                    "Berinisiatif untuk memperkenalkan diri, membangun komunikasi, dan bekerja sama secara efektif.",
+                    "Menunggu anggota tim lain yang memulai interaksi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda memastikan bahwa pekerjaan Anda sesuai dengan standar kualitas yang ditetapkan?",
+                options: [
+                    "Mengerjakan seadanya tanpa memperhatikan kualitas.",
+                    "Hanya fokus pada kecepatan penyelesaian tugas.",
+                    "Melakukan pemeriksaan ulang, meminta masukan, dan terus belajar untuk meningkatkan kualitas.",
+                    "Menyalahkan standar kualitas yang terlalu tinggi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya peluang untuk meningkatkan pelayanan publik di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut karena tidak ada perintah.",
+                    "Menunggu orang lain yang mengambil inisiatif.",
+                    "Mengajukan usulan perbaikan kepada atasan dan berusaha mewujudkannya.",
+                    "Mengkritik pelayanan yang ada tanpa memberikan solusi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga motivasi kerja tetap tinggi meskipun menghadapi rutinitas yang monoton?",
+                options: [
+                    "Mengeluh dan merasa bosan.",
+                    "Mencari pekerjaan lain yang lebih menarik.",
+                    "Mencari variasi dalam pekerjaan, menetapkan tujuan pribadi, dan mengingat kembali tujuan utama Anda.",
+                    "Hanya bekerja jika ada pengawasan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja di bawah tekanan dan tenggat waktu yang sangat ketat. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Merasa panik dan tidak bisa bekerja.",
+                    "Menyerah dan meminta perpanjangan waktu.",
+                    "Tetap tenang, fokus, dan mengatur strategi untuk menyelesaikan tugas secara efektif.",
+                    "Menyalahkan atasan yang memberikan tenggat waktu terlalu ketat."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda menemukan adanya informasi yang tidak benar atau hoaks yang beredar di lingkungan kerja. Apa yang akan Anda lakukan?",
+                options: [
+                    "Ikut menyebarkan informasi tersebut.",
+                    "Mengabaikannya dan tidak peduli.",
+                    "Mencari tahu kebenaran informasi tersebut dan mengklarifikasinya.",
+                    "Mengkritik penyebar hoaks secara terbuka."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda membangun hubungan kerja yang baik dengan rekan-rekan dari berbagai latar belakang?",
+                options: [
+                    "Hanya berinteraksi dengan rekan yang memiliki kesamaan dengan Anda.",
+                    "Menghindari interaksi dengan rekan yang berbeda.",
+                    "Menghargai perbedaan, bersikap terbuka, dan membangun komunikasi yang efektif.",
+                    "Memaksakan pandangan Anda kepada rekan lain."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk mengambil keputusan penting yang berisiko. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Menghindari pengambilan keputusan dan menyerahkannya kepada orang lain.",
+                    "Mengambil keputusan secara impulsif tanpa pertimbangan.",
+                    "Menganalisis risiko dan manfaat, mengumpulkan informasi, dan mengambil keputusan yang paling tepat.",
+                    "Menunggu sampai ada orang lain yang mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kesehatan fisik dan mental di tengah tuntutan pekerjaan yang tinggi?",
+                options: [
+                    "Mengabaikan kesehatan dan terus bekerja tanpa henti.",
+                    "Hanya beristirahat jika sudah sakit.",
+                    "Menjaga pola makan sehat, berolahraga teratur, dan memiliki waktu istirahat yang cukup.",
+                    "Mengonsumsi suplemen atau obat-obatan untuk tetap bugar."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi kolusi, korupsi, dan nepotisme (KKN) di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Diam saja karena takut terlibat masalah.",
+                    "Ikut-ikutan melakukan praktik KKN.",
+                    "Melaporkan praktik tersebut kepada pihak berwenang dan mendukung upaya pemberantasan KKN.",
+                    "Mencoba mencari keuntungan pribadi dari praktik KKN tersebut."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk memberikan presentasi di depan banyak orang, padahal Anda merasa gugup. Apa yang akan Anda lakukan?",
+                options: [
+                    "Menolak untuk presentasi.",
+                    "Meminta rekan kerja lain yang menggantikan.",
+                    "Mempersiapkan diri dengan baik, berlatih, dan mencoba mengatasi rasa gugup.",
+                    "Presentasi seadanya tanpa persiapan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang memiliki keterbatasan fisik atau disabilitas?",
+                options: [
+                    "Mengabaikannya dan tidak peduli.",
+                    "Merasa kasihan dan memperlakukannya secara berbeda.",
+                    "Memberikan dukungan, menghargai kemampuannya, dan menciptakan lingkungan kerja yang inklusif.",
+                    "Menganggapnya sebagai beban bagi tim."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya peluang untuk berinovasi dalam pekerjaan Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut karena takut gagal.",
+                    "Menunggu perintah dari atasan untuk berinovasi.",
+                    "Mengambil inisiatif, mencoba hal baru, dan mencari cara untuk meningkatkan kualitas atau efisiensi.",
+                    "Hanya melakukan pekerjaan sesuai dengan prosedur yang sudah ada."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kerahasiaan data pribadi pengguna layanan publik?",
+                options: [
+                    "Membagikan data tersebut kepada teman atau keluarga.",
+                    "Menyimpan data di tempat yang tidak aman.",
+                    "Menjaga kerahasiaan data dengan ketat dan hanya menggunakan sesuai prosedur yang berlaku.",
+                    "Menggunakan data tersebut untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja sama dengan pihak eksternal yang memiliki budaya kerja berbeda. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Memaksakan budaya kerja Anda kepada mereka.",
+                    "Menghindari kerja sama karena perbedaan budaya.",
+                    "Mempelajari dan menghargai perbedaan budaya, serta mencari cara untuk beradaptasi dan bekerja sama secara efektif.",
+                    "Mengkritik budaya kerja mereka."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi situasi di mana Anda harus membuat keputusan yang tidak populer namun demi kepentingan umum?",
+                options: [
+                    "Menghindari pengambilan keputusan tersebut.",
+                    "Mengambil keputusan populer meskipun merugikan kepentingan umum.",
+                    "Menjelaskan alasan di balik keputusan tersebut, menerima kritik, dan tetap berpegang pada prinsip demi kepentingan umum.",
+                    "Membiarkan orang lain yang mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi penyalahgunaan wewenang di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Diam saja karena takut terlibat masalah.",
+                    "Ikut-ikutan menyalahgunakan wewenang.",
+                    "Melaporkan praktik tersebut kepada pihak berwenang dan mendukung penegakan hukum.",
+                    "Mencari keuntungan pribadi dari penyalahgunaan wewenang tersebut."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga objektivitas dalam memberikan penilaian atau keputusan?",
+                options: [
+                    "Memberikan penilaian berdasarkan suka atau tidak suka pribadi.",
+                    "Memihak kepada teman atau kerabat.",
+                    "Mendasarkan penilaian pada fakta, data, dan kriteria yang jelas, tanpa pengaruh emosi atau kepentingan pribadi.",
+                    "Menunda penilaian agar tidak ada yang tersinggung."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk memberikan masukan atau kritik terhadap kinerja atasan. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Menolak karena takut atasan marah.",
+                    "Memberikan kritik secara terbuka di depan umum.",
+                    "Memberikan masukan atau kritik secara konstruktif, sopan, dan pribadi.",
+                    "Hanya memuji atasan meskipun ada kekurangan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda beradaptasi dengan lingkungan kerja yang dinamis dan sering berubah?",
+                options: [
+                    "Merasa tidak nyaman dan sulit beradaptasi.",
+                    "Menolak perubahan dan tetap pada cara lama.",
+                    "Bersikap fleksibel, terbuka terhadap hal baru, dan terus belajar untuk mengikuti perkembangan.",
+                    "Mengeluh tentang perubahan yang terjadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi konflik antara instansi Anda dengan masyarakat. Apa yang akan Anda lakukan?",
+                options: [
+                    "Membiarkannya dan tidak peduli.",
+                    "Memihak instansi tanpa mendengarkan aspirasi masyarakat.",
+                    "Berusaha menjadi jembatan komunikasi, mendengarkan aspirasi masyarakat, dan mencari solusi yang adil.",
+                    "Menyalahkan masyarakat atas konflik tersebut."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga profesionalisme dalam setiap tugas yang diemban?",
+                options: [
+                    "Bekerja seadanya tanpa memperhatikan kualitas.",
+                    "Hanya bekerja jika ada pengawasan.",
+                    "Melaksanakan tugas dengan penuh tanggung jawab, integritas, dan sesuai standar yang berlaku.",
+                    "Mencari keuntungan pribadi dari setiap tugas."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk melakukan presentasi di depan audiens yang beragam latar belakang. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Hanya menggunakan bahasa atau istilah yang Anda pahami.",
+                    "Mengabaikan perbedaan latar belakang audiens.",
+                    "Menyesuaikan gaya bahasa, materi, dan contoh agar mudah dipahami oleh semua audiens.",
+                    "Presentasi seadanya tanpa memperhatikan audiens."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi tekanan dari berbagai pihak dalam menjalankan tugas?",
+                options: [
+                    "Merasa tertekan dan tidak bisa bekerja.",
+                    "Menyerah dan meminta bantuan orang lain.",
+                    "Tetap tenang, fokus pada tugas, dan mencari cara untuk mengelola tekanan secara efektif.",
+                    "Menyalahkan pihak-pihak yang memberikan tekanan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya peluang untuk meningkatkan kinerja tim melalui kolaborasi antaranggota. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya bekerja sendiri tanpa melibatkan anggota tim lain.",
+                    "Mendorong kolaborasi, memfasilitasi komunikasi, dan membangun sinergi antaranggota tim.",
+                    "Membiarkan anggota tim bekerja masing-masing."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kerahasiaan informasi sensitif yang Anda akses dalam pekerjaan?",
+                options: [
+                    "Membagikan informasi tersebut kepada teman atau keluarga.",
+                    "Menyimpan informasi di tempat yang tidak aman.",
+                    "Menjaga kerahasiaan informasi dengan ketat dan hanya menggunakan sesuai prosedur yang berlaku.",
+                    "Menggunakan informasi tersebut untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk mengambil keputusan yang melibatkan banyak pihak dengan kepentingan yang berbeda. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Mengambil keputusan yang menguntungkan diri sendiri.",
+                    "Menunda pengambilan keputusan agar tidak ada konflik.",
+                    "Mendengarkan semua masukan, mempertimbangkan semua kepentingan, dan mengambil keputusan yang adil dan berimbang.",
+                    "Membiarkan pihak lain yang mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga integritas dalam menghadapi godaan suap atau gratifikasi?",
+                options: [
+                    "Menerima suap atau gratifikasi jika tidak ada yang tahu.",
+                    "Mencari cara untuk mendapatkan suap atau gratifikasi.",
+                    "Menolak dengan tegas, melaporkan, dan menjunjung tinggi nilai-nilai anti-korupsi.",
+                    "Menerima suap atau gratifikasi dan menggunakannya untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi pengembangan diri melalui kursus online yang relevan dengan pekerjaan Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut karena tidak ada waktu.",
+                    "Mengikuti kursus jika dibiayai sepenuhnya oleh instansi.",
+                    "Mengambil inisiatif untuk mengikuti kursus tersebut demi peningkatan kompetensi diri.",
+                    "Menunggu sampai ada perintah dari atasan untuk mengikuti kursus."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang melakukan kesalahan berulang kali?",
+                options: [
+                    "Memarahinya dan menganggapnya tidak kompeten.",
+                    "Mengabaikannya dan membiarkannya melakukan kesalahan.",
+                    "Memberikan bimbingan, umpan balik konstruktif, dan mencari tahu akar masalahnya untuk membantu dia berkembang.",
+                    "Melaporkannya kepada atasan untuk diberikan sanksi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja sama dengan tim dari instansi lain untuk proyek bersama. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Hanya fokus pada kepentingan instansi Anda sendiri.",
+                    "Menghindari interaksi dengan tim dari instansi lain.",
+                    "Membangun komunikasi yang efektif, menghargai perbedaan, dan bekerja sama untuk mencapai tujuan bersama.",
+                    "Mencoba mencari keuntungan pribadi dari proyek bersama tersebut."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga keseimbangan antara kehidupan pribadi dan profesional?",
+                options: [
+                    "Mengutamakan pekerjaan di atas segalanya.",
+                    "Mengabaikan pekerjaan demi kehidupan pribadi.",
+                    "Mengatur waktu secara efektif, menetapkan batasan yang jelas, dan memberikan perhatian yang seimbang pada keduanya.",
+                    "Mencampuradukkan urusan pribadi dan profesional."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi konflik antara anggota tim karena perbedaan pendapat. Apa yang akan Anda lakukan?",
+                options: [
+                    "Membiarkannya dan tidak ikut campur.",
+                    "Memihak salah satu anggota tim.",
+                    "Berusaha menjadi mediator, memfasilitasi diskusi, dan mencari solusi yang adil dan menguntungkan semua pihak.",
+                    "Menyalahkan anggota tim yang memulai konflik."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga motivasi diri saat menghadapi tantangan atau kegagalan?",
+                options: [
+                    "Menyerah dan merasa putus asa.",
+                    "Menyalahkan orang lain atas kegagalan tersebut.",
+                    "Mengingat kembali tujuan, belajar dari kesalahan, dan terus berusaha dengan semangat yang baru.",
+                    "Menghindari tantangan agar tidak mengalami kegagalan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja di bawah pengawasan yang ketat. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Merasa tidak nyaman dan tertekan.",
+                    "Mencoba mencari celah untuk menghindari pengawasan.",
+                    "Menerima pengawasan sebagai bagian dari proses kerja dan berusaha menunjukkan kinerja terbaik.",
+                    "Mengeluh tentang pengawasan yang terlalu ketat."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang memiliki latar belakang pendidikan atau pengalaman yang berbeda?",
+                options: [
+                    "Menganggapnya tidak kompeten.",
+                    "Hanya berinteraksi dengan rekan yang memiliki latar belakang serupa.",
+                    "Menghargai perbedaan, belajar dari pengalaman mereka, dan bekerja sama untuk mencapai tujuan bersama.",
+                    "Mencoba mengajari mereka cara kerja Anda."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan efisiensi penggunaan anggaran di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada penggunaan anggaran tanpa memperhatikan efisiensi.",
+                    "Mengajukan usulan perbaikan, mencari cara untuk menghemat, dan memastikan penggunaan anggaran yang efektif.",
+                    "Menyalahkan anggaran yang terlalu kecil."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kerahasiaan informasi yang bersifat pribadi dari rekan kerja atau atasan?",
+                options: [
+                    "Membagikan informasi tersebut kepada teman atau keluarga.",
+                    "Menyimpan informasi di tempat yang tidak aman.",
+                    "Menjaga kerahasiaan informasi dengan ketat dan hanya menggunakan sesuai prosedur yang berlaku.",
+                    "Menggunakan informasi tersebut untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk mengambil keputusan yang tidak populer namun demi kebaikan jangka panjang instansi. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Menghindari pengambilan keputusan tersebut.",
+                    "Mengambil keputusan populer meskipun merugikan instansi.",
+                    "Menjelaskan alasan di balik keputusan tersebut, menerima kritik, dan tetap berpegang pada prinsip demi kebaikan jangka panjang instansi.",
+                    "Membiarkan orang lain yang mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang memiliki pandangan atau ide yang berbeda dengan Anda?",
+                options: [
+                    "Menolak pandangan atau ide mereka secara langsung.",
+                    "Mengabaikan pandangan atau ide mereka.",
+                    "Mendengarkan dengan seksama, menghargai perbedaan, dan mencari titik temu atau solusi terbaik.",
+                    "Memaksakan pandangan atau ide Anda sendiri."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan kualitas pelayanan publik melalui teknologi. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut karena takut dengan teknologi baru.",
+                    "Menunggu orang lain yang mengambil inisiatif.",
+                    "Mengajukan usulan, mempelajari teknologi baru, dan berusaha mengimplementasikannya untuk meningkatkan pelayanan.",
+                    "Mengkritik teknologi yang ada tanpa memberikan solusi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga integritas dalam menghadapi tekanan dari pihak luar untuk melakukan tindakan yang tidak etis?",
+                options: [
+                    "Melakukan tindakan tidak etis tersebut demi kepentingan pribadi.",
+                    "Mencari cara untuk mendapatkan keuntungan dari tekanan tersebut.",
+                    "Menolak dengan tegas, melaporkan, dan menjunjung tinggi nilai-nilai etika dan integritas.",
+                    "Mengabaikan tekanan tersebut dan berharap tidak ada yang tahu."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja dalam tim yang memiliki anggota dari berbagai latar belakang budaya. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Hanya berinteraksi dengan anggota tim yang memiliki budaya serupa.",
+                    "Menghindari interaksi dengan anggota tim yang berbeda budaya.",
+                    "Menghargai perbedaan budaya, belajar dari satu sama lain, dan membangun komunikasi yang efektif untuk mencapai tujuan bersama.",
+                    "Memaksakan budaya Anda kepada anggota tim lain."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi situasi di mana Anda harus bekerja di bawah tekanan waktu yang sangat singkat?",
+                options: [
+                    "Merasa panik dan tidak bisa bekerja.",
+                    "Menyerah dan meminta perpanjangan waktu.",
+                    "Tetap tenang, fokus, mengatur prioritas, dan berusaha menyelesaikan tugas secara efisien.",
+                    "Menyalahkan atasan yang memberikan waktu terlalu singkat."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan efisiensi proses kerja di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada pekerjaan rutin tanpa mencari perbaikan.",
+                    "Mengajukan usulan perbaikan, menganalisis proses yang ada, dan mencari cara untuk membuatnya lebih efisien.",
+                    "Menyalahkan proses yang sudah ada tanpa memberikan solusi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kerahasiaan data atau informasi yang bersifat rahasia negara?",
+                options: [
+                    "Membagikan informasi tersebut kepada teman atau keluarga.",
+                    "Menyimpan informasi di tempat yang tidak aman.",
+                    "Menjaga kerahasiaan informasi dengan sangat ketat dan hanya menggunakan sesuai prosedur yang berlaku.",
+                    "Menggunakan informasi tersebut untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk mengambil keputusan yang berisiko tinggi namun berpotensi memberikan dampak besar bagi instansi. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Menghindari pengambilan keputusan tersebut.",
+                    "Mengambil keputusan secara impulsif tanpa pertimbangan.",
+                    "Menganalisis risiko dan potensi dampak, mengumpulkan informasi, dan mengambil keputusan yang matang.",
+                    "Menunggu sampai ada orang lain yang mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang memiliki pandangan radikal atau intoleran?",
+                options: [
+                    "Ikut-ikutan menyebarkan pandangan tersebut.",
+                    "Mengabaikannya dan tidak peduli.",
+                    "Mencoba memberikan pemahaman yang benar, melaporkan jika ada pelanggaran, dan menjunjung tinggi nilai-nilai Pancasila.",
+                    "Menghindari interaksi dengan rekan tersebut."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan kualitas sumber daya manusia di instansi Anda melalui program pelatihan. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada pekerjaan rutin tanpa mencari pengembangan SDM.",
+                    "Mengajukan usulan program pelatihan, mencari narasumber, dan berusaha meningkatkan kompetensi SDM.",
+                    "Menyalahkan kualitas SDM yang rendah tanpa memberikan solusi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga integritas dalam menghadapi tekanan untuk melakukan praktik KKN?",
+                options: [
+                    "Menerima tawaran KKN jika menguntungkan pribadi.",
+                    "Mencari cara untuk mendapatkan keuntungan dari tekanan tersebut.",
+                    "Menolak dengan tegas, melaporkan, dan menjadi teladan dalam menjunjung tinggi nilai-nilai anti-KKN.",
+                    "Mengabaikan tekanan tersebut dan berharap tidak ada yang tahu."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja dalam tim yang memiliki anggota dari berbagai generasi (muda, senior). Bagaimana Anda menyikapinya?",
+                options: [
+                    "Hanya berinteraksi dengan anggota tim dari generasi yang sama.",
+                    "Mengabaikan perbedaan generasi.",
+                    "Menghargai pengalaman dan ide dari setiap generasi, belajar dari satu sama lain, dan membangun komunikasi yang efektif.",
+                    "Memaksakan cara kerja Anda kepada generasi lain."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi situasi di mana Anda harus bekerja dengan sumber daya yang terbatas?",
+                options: [
+                    "Mengeluh dan tidak bisa bekerja.",
+                    "Menyerah dan meminta tambahan sumber daya.",
+                    "Berpikir kreatif, mencari solusi alternatif, dan memaksimalkan penggunaan sumber daya yang ada.",
+                    "Menyalahkan keterbatasan sumber daya."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan partisipasi masyarakat dalam program instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada pelaksanaan program tanpa melibatkan masyarakat.",
+                    "Mengajukan usulan, mencari cara untuk melibatkan masyarakat, dan membangun komunikasi yang efektif dengan mereka.",
+                    "Menyalahkan masyarakat yang kurang partisipatif."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kerahasiaan informasi yang bersifat strategis bagi instansi?",
+                options: [
+                    "Membagikan informasi tersebut kepada pihak luar.",
+                    "Menyimpan informasi di tempat yang tidak aman.",
+                    "Menjaga kerahasiaan informasi dengan sangat ketat dan hanya menggunakan sesuai prosedur yang berlaku.",
+                    "Menggunakan informasi tersebut untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk mengambil keputusan yang berdampak luas bagi banyak pihak. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Mengambil keputusan yang menguntungkan diri sendiri.",
+                    "Menunda pengambilan keputusan agar tidak ada konflik.",
+                    "Menganalisis dampak, mendengarkan masukan dari berbagai pihak, dan mengambil keputusan yang adil dan berimbang.",
+                    "Membiarkan pihak lain yang mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang memiliki masalah pribadi yang memengaruhi kinerja mereka?",
+                options: [
+                    "Mengabaikannya dan fokus pada pekerjaan.",
+                    "Menyalahkan mereka atas kinerja yang buruk.",
+                    "Mendekati secara pribadi, menawarkan dukungan, dan membantu mencari solusi jika memungkinkan.",
+                    "Melaporkannya kepada atasan untuk diberikan sanksi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan efektivitas komunikasi di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada komunikasi satu arah.",
+                    "Mengajukan usulan perbaikan, mencari cara untuk meningkatkan komunikasi, dan membangun saluran komunikasi yang efektif.",
+                    "Menyalahkan komunikasi yang buruk tanpa memberikan solusi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga integritas dalam menghadapi tekanan untuk melakukan tindakan yang melanggar hukum?",
+                options: [
+                    "Melakukan tindakan melanggar hukum tersebut demi kepentingan pribadi.",
+                    "Mencari cara untuk mendapatkan keuntungan dari tekanan tersebut.",
+                    "Menolak dengan tegas, melaporkan, dan menjunjung tinggi nilai-nilai hukum dan integritas.",
+                    "Mengabaikan tekanan tersebut dan berharap tidak ada yang tahu."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja dalam tim yang memiliki anggota dari berbagai tingkat jabatan. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Hanya berinteraksi dengan anggota tim dari tingkat jabatan yang sama.",
+                    "Mengabaikan perbedaan tingkat jabatan.",
+                    "Menghargai peran dan kontribusi setiap anggota tim, regardless of their position, and work collaboratively.",
+                    "Memaksakan pandangan Anda kepada anggota tim dengan jabatan lebih rendah."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi situasi di mana Anda harus bekerja di lingkungan yang tidak kondusif?",
+                options: [
+                    "Mengeluh dan tidak bisa bekerja.",
+                    "Menyerah dan mencari lingkungan kerja yang lebih baik.",
+                    "Berusaha beradaptasi, mencari cara untuk membuat lingkungan lebih baik, dan tetap fokus pada pekerjaan.",
+                    "Menyalahkan lingkungan kerja atas ketidaknyamanan Anda."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan kualitas data atau informasi di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada pengumpulan data tanpa memperhatikan kualitas.",
+                    "Mengajukan usulan perbaikan, mencari cara untuk meningkatkan akurasi dan keandalan data, dan memastikan data yang berkualitas.",
+                    "Menyalahkan kualitas data yang buruk tanpa memberikan solusi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kerahasiaan informasi yang bersifat pribadi dari atasan atau rekan kerja?",
+                options: [
+                    "Membagikan informasi tersebut kepada pihak lain.",
+                    "Menyimpan informasi di tempat yang tidak aman.",
+                    "Menjaga kerahasiaan informasi dengan ketat dan hanya menggunakan sesuai prosedur yang berlaku.",
+                    "Menggunakan informasi tersebut untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk mengambil keputusan yang berpotensi menimbulkan pro dan kontra di masyarakat. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Menghindari pengambilan keputusan tersebut.",
+                    "Mengambil keputusan yang populer meskipun merugikan.",
+                    "Menganalisis pro dan kontra, mendengarkan aspirasi masyarakat, dan mengambil keputusan yang paling menguntungkan kepentingan umum.",
+                    "Membiarkan masyarakat yang mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang memiliki masalah kesehatan yang memengaruhi kinerja mereka?",
+                options: [
+                    "Mengabaikannya dan fokus pada pekerjaan.",
+                    "Menyalahkan mereka atas kinerja yang buruk.",
+                    "Mendekati secara pribadi, menawarkan dukungan, dan membantu mencari solusi atau akomodasi jika memungkinkan.",
+                    "Melaporkannya kepada atasan untuk diberikan sanksi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan efisiensi penggunaan energi di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada penggunaan energi tanpa memperhatikan efisiensi.",
+                    "Mengajukan usulan perbaikan, mencari cara untuk menghemat energi, dan memastikan penggunaan energi yang efisien.",
+                    "Menyalahkan biaya energi yang mahal."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga integritas dalam menghadapi tekanan untuk melakukan tindakan yang tidak sesuai dengan nilai-nilai Pancasila?",
+                options: [
+                    "Melakukan tindakan tersebut demi kepentingan pribadi.",
+                    "Mencari cara untuk mendapatkan keuntungan dari tekanan tersebut.",
+                    "Menolak dengan tegas, melaporkan, dan menjunjung tinggi nilai-nilai Pancasila.",
+                    "Mengabaikan tekanan tersebut dan berharap tidak ada yang tahu."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja dalam tim yang memiliki anggota dari berbagai latar belakang pendidikan. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Hanya berinteraksi dengan anggota tim yang memiliki latar belakang pendidikan serupa.",
+                    "Mengabaikan perbedaan latar belakang pendidikan.",
+                    "Menghargai pengetahuan dan keahlian dari setiap latar belakang, belajar dari satu sama lain, dan membangun kolaborasi yang efektif.",
+                    "Memaksakan pandangan Anda kepada anggota tim lain."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi situasi di mana Anda harus bekerja dengan sistem atau prosedur yang rumit?",
+                options: [
+                    "Mengeluh dan tidak bisa bekerja.",
+                    "Menyerah dan meminta bantuan orang lain.",
+                    "Mempelajari sistem atau prosedur tersebut dengan cermat, mencari cara untuk menyederhanakannya jika memungkinkan, dan tetap fokus pada pekerjaan.",
+                    "Menyalahkan sistem atau prosedur yang rumit."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan keamanan data di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada pekerjaan rutin tanpa memperhatikan keamanan data.",
+                    "Mengajukan usulan perbaikan, mencari cara untuk meningkatkan keamanan data, dan memastikan data terlindungi.",
+                    "Menyalahkan sistem keamanan yang lemah."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kerahasiaan informasi yang bersifat rahasia perusahaan atau organisasi?",
+                options: [
+                    "Membagikan informasi tersebut kepada pihak luar.",
+                    "Menyimpan informasi di tempat yang tidak aman.",
+                    "Menjaga kerahasiaan informasi dengan sangat ketat dan hanya menggunakan sesuai prosedur yang berlaku.",
+                    "Menggunakan informasi tersebut untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk mengambil keputusan yang berpotensi menimbulkan dampak negatif bagi sebagian kecil pihak namun positif bagi sebagian besar pihak. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Menghindari pengambilan keputusan tersebut.",
+                    "Mengambil keputusan yang menguntungkan semua pihak meskipun tidak realistis.",
+                    "Menganalisis dampak, mencari cara untuk meminimalkan dampak negatif, dan mengambil keputusan yang paling menguntungkan kepentingan umum.",
+                    "Membiarkan pihak-pihak yang terdampak mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang memiliki pandangan atau ide yang bertentangan dengan kebijakan instansi?",
+                options: [
+                    "Mendukung pandangan atau ide mereka.",
+                    "Mengabaikan pandangan atau ide mereka.",
+                    "Mendengarkan dengan seksama, menjelaskan kebijakan instansi, dan mencari cara untuk menyelaraskan pandangan tersebut dengan tujuan instansi.",
+                    "Melaporkannya kepada atasan untuk diberikan sanksi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan kualitas produk atau layanan di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada produksi tanpa memperhatikan kualitas.",
+                    "Mengajukan usulan perbaikan, mencari cara untuk meningkatkan kualitas, dan memastikan produk atau layanan yang berkualitas tinggi.",
+                    "Menyalahkan kualitas yang rendah tanpa memberikan solusi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga integritas dalam menghadapi tekanan untuk melakukan tindakan yang tidak sesuai dengan kode etik profesi?",
+                options: [
+                    "Melakukan tindakan tersebut demi kepentingan pribadi.",
+                    "Mencari cara untuk mendapatkan keuntungan dari tekanan tersebut.",
+                    "Menolak dengan tegas, melaporkan, dan menjunjung tinggi nilai-nilai kode etik profesi.",
+                    "Mengabaikan tekanan tersebut dan berharap tidak ada yang tahu."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk bekerja dalam tim yang memiliki anggota dari berbagai usia. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Hanya berinteraksi dengan anggota tim dari usia yang sama.",
+                    "Mengabaikan perbedaan usia.",
+                    "Menghargai pengalaman dan perspektif dari setiap usia, belajar dari satu sama lain, dan membangun kolaborasi yang efektif.",
+                    "Memaksakan cara kerja Anda kepada anggota tim lain."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menghadapi situasi di mana Anda harus bekerja dengan teknologi baru yang belum Anda kuasai?",
+                options: [
+                    "Mengeluh dan tidak bisa bekerja.",
+                    "Menyerah dan meminta bantuan orang lain.",
+                    "Mempelajari teknologi tersebut dengan antusias, mencari sumber belajar, dan berusaha menguasainya untuk menunjang pekerjaan.",
+                    "Menyalahkan teknologi yang terlalu canggih."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda melihat adanya potensi untuk meningkatkan kepuasan pelanggan di instansi Anda. Apa yang akan Anda lakukan?",
+                options: [
+                    "Mengabaikan peluang tersebut.",
+                    "Hanya fokus pada pekerjaan rutin tanpa memperhatikan kepuasan pelanggan.",
+                    "Mengajukan usulan perbaikan, mencari cara untuk meningkatkan pelayanan, dan memastikan pelanggan merasa puas.",
+                    "Menyalahkan pelanggan yang terlalu banyak tuntutan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda menjaga kerahasiaan informasi yang bersifat strategis bagi negara?",
+                options: [
+                    "Membagikan informasi tersebut kepada pihak luar.",
+                    "Menyimpan informasi di tempat yang tidak aman.",
+                    "Menjaga kerahasiaan informasi dengan sangat ketat dan hanya menggunakan sesuai prosedur yang berlaku.",
+                    "Menggunakan informasi tersebut untuk kepentingan pribadi."
+                ],
+                answer: 2
+            },
+            {
+                question: "Anda diminta untuk mengambil keputusan yang berpotensi menimbulkan dampak jangka panjang bagi instansi. Bagaimana Anda menyikapinya?",
+                options: [
+                    "Mengambil keputusan yang menguntungkan jangka pendek saja.",
+                    "Menunda pengambilan keputusan agar tidak ada risiko.",
+                    "Menganalisis dampak jangka panjang, mempertimbangkan semua faktor, dan mengambil keputusan yang paling baik untuk masa depan instansi.",
+                    "Membiarkan orang lain yang mengambil keputusan."
+                ],
+                answer: 2
+            },
+            {
+                question: "Bagaimana Anda bersikap terhadap rekan kerja yang memiliki pandangan atau ide yang berbeda dengan Anda namun tetap konstruktif?",
+                options: [
+                    "Menolak pandangan atau ide mereka secara langsung.",
+                    "Mengabaikan pandangan atau ide mereka.",
+                    "Mendengarkan dengan seksama, menghargai perbedaan, dan mencari titik temu atau solusi terbaik yang menguntungkan bersama.",
+                    "Memaksakan pandangan atau ide Anda sendiri."
+                ],
+                answer: 2
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(questions.length).fill(null); // Stores the index of the selected option
+        let timeLeft = 100 * 60; // 100 minutes in seconds
+        let initialTimeLeft = 100 * 60; // Store initial time for reset
+        let timerInterval;
+
+        // DOM Elements
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const saveNextBtn = document.getElementById('save-next-btn');
+        const skipQuestionBtn = document.getElementById('skip-question-btn');
+        const submitBtnHeader = document.getElementById('submit-btn-header');
+        const restartTestBtn = document.getElementById('restart-test-btn'); // New restart button
+        const timerDisplay = document.getElementById('timer');
+        const currentQuestionNumberDisplay = document.getElementById('current-question-number');
+        const totalQuestionsDisplay = document.getElementById('total-questions-display');
+        const answeredCountDisplay = document.getElementById('answered-count-display');
+        const unansweredCountDisplay = document.getElementById('unanswered-count-display');
+        const questionNavigationGrid = document.getElementById('question-navigation-grid');
+
+        // Removed: const startModal = document.getElementById('start-modal'); // Start modal
+        // Removed: const startTestBtn = document.getElementById('start-test-btn'); // Start button
+
+        const confirmModal = document.getElementById('confirm-modal');
+        const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
+        const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+
+        const restartConfirmModal = document.getElementById('restart-confirm-modal');
+        const cancelRestartBtn = document.getElementById('cancel-restart-btn');
+        const confirmRestartBtn = document.getElementById('confirm-restart-btn');
+
+        const resultsModal = document.getElementById('results-modal');
+        const totalQuestionsResult = document.getElementById('total-questions-result');
+        const correctAnswersResult = document.getElementById('correct-answers-result');
+        const wrongAnswersResult = document.getElementById('wrong-answers-result');
+        const unansweredQuestionsResult = document.getElementById('unanswered-questions-result');
+        const scoreResult = document.getElementById('score-result');
+        const closeResultsBtn = document.getElementById('close-results-btn');
+
+        /**
+         * Initializes the test (called after "Mulai Ujian" is clicked or on restart).
+         */
+        function initializeTest() {
+            currentQuestionIndex = 0;
+            userAnswers.fill(null); // Clear all answers
+            timeLeft = initialTimeLeft; // Reset timer to initial value
+            clearInterval(timerInterval); // Ensure any previous timer is cleared
+            loadQuestion(); // Load the first question
+            startTimer(); // Start the timer
+            updateQuestionCounts(); // Update counts
+            renderQuestionNavigation(); // Render navigation grid
+            // Removed: hideModal(startModal); // No longer needed as start modal is removed
+            hideModal(restartConfirmModal); // Hide restart modal if it was open
+        }
+
+        /**
+         * Loads and displays the current question and its options.
+         */
+        function loadQuestion() {
+            const question = questions[currentQuestionIndex];
+            currentQuestionNumberDisplay.textContent = currentQuestionIndex + 1;
+            questionText.textContent = `${question.question}`;
+            optionsContainer.innerHTML = ''; // Clear previous options
+
+            question.options.forEach((option, index) => {
+                const label = document.createElement('label');
+                label.className = 'option-label';
+                const optionLetter = String.fromCharCode(65 + index);
+                label.innerHTML = `
+                    <input type="radio" name="answer" value="${index}" class="form-radio h-5 w-5 text-blue-600" />
+                    <span class="text-gray-800 text-base">${optionLetter}. ${option}</span>
+                `;
+                optionsContainer.appendChild(label);
+
+                if (userAnswers[currentQuestionIndex] === index) {
+                    label.classList.add('selected');
+                    label.querySelector('input').checked = true;
+                }
+
+                label.querySelector('input').addEventListener('change', (event) => {
+                    selectAnswer(parseInt(event.target.value));
+                    optionsContainer.querySelectorAll('.option-label').forEach(lbl => lbl.classList.remove('selected'));
+                    label.classList.add('selected');
+                });
+            });
+
+            updateNavigationButtons();
+            updateQuestionCounts();
+            renderQuestionNavigation();
+        }
+
+        /**
+         * Records the user's selected answer for the current question.
+         * @param {number} selectedOptionIndex - The index of the selected option.
+         */
+        function selectAnswer(selectedOptionIndex) {
+            userAnswers[currentQuestionIndex] = selectedOptionIndex;
+            updateQuestionCounts();
+            renderQuestionNavigation();
+        }
+
+        /**
+         * Moves to the next question, saving the current answer.
+         */
+        function saveAndNextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showModal(confirmModal);
+            }
+        }
+
+        /**
+         * Skips the current question and moves to the next.
+         */
+        function skipQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showModal(confirmModal);
+            }
+        }
+
+        /**
+         * Updates the visibility and state of navigation buttons.
+         */
+        function updateNavigationButtons() {
+            // The "Simpan dan Lanjutkan" button will always be visible,
+            // and act as "Next" or "Submit" on the last question.
+            // The "Lewatkan soal ini" button will always be visible.
+        }
+
+        /**
+         * Updates the question counter display and answered/unanswered counts.
+         */
+        function updateQuestionCounts() {
+            totalQuestionsDisplay.textContent = questions.length;
+            let answeredCount = userAnswers.filter(answer => answer !== null).length;
+            let unansweredCount = questions.length - answeredCount;
+            answeredCountDisplay.textContent = answeredCount;
+            unansweredCountDisplay.textContent = unansweredCount;
+        }
+
+        /**
+         * Renders and updates the question navigation grid.
+         */
+        function renderQuestionNavigation() {
+            questionNavigationGrid.innerHTML = '';
+            questions.forEach((_, index) => {
+                const navButton = document.createElement('button');
+                navButton.textContent = index + 1;
+                navButton.classList.add('question-nav-button');
+
+                if (userAnswers[index] !== null) {
+                    navButton.classList.add('answered');
+                } else {
+                    navButton.classList.remove('answered');
+                }
+
+                if (index === currentQuestionIndex) {
+                    navButton.classList.add('current');
+                } else {
+                    navButton.classList.remove('current');
+                }
+
+                navButton.addEventListener('click', () => {
+                    currentQuestionIndex = index;
+                    loadQuestion();
+                });
+                questionNavigationGrid.appendChild(navButton);
+            });
+        }
+
+        /**
+         * Starts the countdown timer.
+         */
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = "Waktu Habis!";
+                    submitTest();
+                } else {
+                    timeLeft--;
+                }
+            }, 1000);
+        }
+
+        /**
+         * Calculates the score and displays the results.
+         */
+        function submitTest() {
+            clearInterval(timerInterval);
+            let correctCount = 0;
+            let wrongCount = 0;
+            let unansweredCount = 0;
+
+            userAnswers.forEach((userAnswer, index) => {
+                if (userAnswer === null) {
+                    unansweredCount++;
+                } else if (userAnswer === questions[index].answer) {
+                    correctCount++;
+                } else {
+                    wrongCount++;
+                }
+            });
+
+            const score = correctCount * 10;
+
+            totalQuestionsResult.textContent = questions.length;
+            correctAnswersResult.textContent = correctCount;
+            wrongAnswersResult.textContent = wrongCount;
+            unansweredQuestionsResult.textContent = unansweredCount;
+            scoreResult.textContent = score;
+
+            showModal(resultsModal);
+        }
+
+        /**
+         * Shows a given modal.
+         * @param {HTMLElement} modalElement - The modal element to show.
+         */
+        function showModal(modalElement) {
+            modalElement.classList.add('show');
+        }
+
+        /**
+         * Hides a given modal.
+         * @param {HTMLElement} modalElement - The modal element to hide.
+         */
+        function hideModal(modalElement) {
+            modalElement.classList.remove('show');
+        }
+
+        // Event Listeners
+        saveNextBtn.addEventListener('click', saveAndNextQuestion);
+        skipQuestionBtn.addEventListener('click', skipQuestion);
+        submitBtnHeader.addEventListener('click', () => showModal(confirmModal));
+        restartTestBtn.addEventListener('click', () => showModal(restartConfirmModal));
+
+        cancelSubmitBtn.addEventListener('click', () => hideModal(confirmModal));
+        confirmSubmitBtn.addEventListener('click', () => {
+            hideModal(confirmModal);
+            submitTest();
+        });
+        cancelRestartBtn.addEventListener('click', () => hideModal(restartConfirmModal));
+        confirmRestartBtn.addEventListener('click', initializeTest);
+        closeResultsBtn.addEventListener('click', () => hideModal(resultsModal));
+
+        // Initialize the test directly on window load
+        window.onload = function() {
+            initializeTest();
+        };
+    </script>
+</body>
+</html>
